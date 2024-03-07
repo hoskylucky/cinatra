@@ -38,7 +38,7 @@ class callback_awaitor_base {
       awaitor.coro_ = handle;
       op(awaitor_handler{&awaitor});
     }
-    auto coAwait(async_simple::Executor *executor) const noexcept {
+    auto coAwait(async_simple::Executor *) const noexcept {
       return *this;
     }
     decltype(auto) await_resume() noexcept {

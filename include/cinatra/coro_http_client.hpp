@@ -92,11 +92,11 @@ constexpr bool is_stream_ptr_v = is_smart_ptr<T>::value;
 struct http_header;
 
 struct resp_data {
-  std::error_code net_err;
+  std::error_code net_err = {};
   int status = 0;
   bool eof = false;
-  std::string_view resp_body;
-  std::span<http_header> resp_headers;
+  std::string_view resp_body = {};
+  std::span<http_header> resp_headers = {};
 #ifdef BENCHMARK_TEST
   uint64_t total = 0;
 #endif
@@ -105,8 +105,8 @@ struct resp_data {
 template <typename String = std::string>
 struct req_context {
   req_content_type content_type = req_content_type::none;
-  std::string req_str;
-  String content;
+  std::string req_str = {};
+  String content = {};
   std::shared_ptr<coro_io::coro_file> stream = nullptr;
 };
 

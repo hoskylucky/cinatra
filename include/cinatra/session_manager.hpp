@@ -46,7 +46,7 @@ class session_manager {
 
     auto now = std::time(nullptr);
     for (auto it = map_.begin(); it != map_.end();) {
-      if (it->second->get_time_stamp() <= now)
+      if (it->second->get_time_stamp() <= static_cast<size_t>(now))
         it = map_.erase(it);
       else
         ++it;

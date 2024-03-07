@@ -57,7 +57,7 @@ class coro_http_response {
 
   void set_status_and_content_view(
       status_type status, std::string_view content = "",
-      content_encoding encoding = content_encoding::none, bool is_view = true) {
+      [[maybe_unused]]content_encoding encoding = content_encoding::none, bool is_view = true) {
     status_ = status;
 #ifdef CINATRA_ENABLE_GZIP
     if (encoding == content_encoding::gzip) {

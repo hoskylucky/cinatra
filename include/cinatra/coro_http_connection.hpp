@@ -26,10 +26,10 @@
 
 namespace cinatra {
 struct websocket_result {
-  std::error_code ec;
-  ws_frame_type type;
-  std::string_view data;
-  bool eof;
+  std::error_code ec = {};
+  ws_frame_type type = {};
+  std::string_view data = {};
+  bool eof = {};
 };
 
 class coro_http_connection

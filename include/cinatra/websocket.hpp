@@ -183,7 +183,7 @@ class websocket {
     header.resize(size + 4);
     std::memcpy(header.data() + size, mask, 4);
 
-    for (int i = 0; i < data.size(); ++i) {
+    for (auto i = 0u; i < data.size(); ++i) {
       data[i] ^= mask[i % 4];
     }
 

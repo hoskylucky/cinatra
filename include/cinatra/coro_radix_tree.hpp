@@ -392,8 +392,8 @@ class radix_tree {
 
  private:
   int find_pos(const std::string &str, char target, int start) {
-    auto i = str.find(target, start);
-    return i == -1 ? str.size() : i;
+    int i = str.find(target, start);
+    return i == -1 ? static_cast<int>(str.size()) : i;
   }
 
   std::shared_ptr<radix_tree_node> root;

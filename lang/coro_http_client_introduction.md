@@ -59,11 +59,11 @@ struct http_header {
 /// \param eof http 响应是否结束，一般请求eof 为true，eof对于文件下载才有意义，
 ///            下载的中间过程中eof 为false，最后一个包时eof才为true)
 struct resp_data {
-  std::error_code net_err;
-  int status;
-  std::string_view resp_body;
-  std::span<http_header> resp_headers;
-  bool eof;
+  std::error_code net_err = {};
+  int status = {};
+  std::string_view resp_body = "";
+  std::span<http_header> resp_headers = {};
+  bool eof = {};
 };
 
 /// \param uri http uri，如http://www.example.com
