@@ -202,7 +202,7 @@ class coro_http_router {
     return nullptr;
   }
 
-  void route(auto handler, auto& req, auto& resp, std::string_view key) {
+  void route(auto handler, auto& req, auto& resp, std::string_view ) {
     try {
       (*handler)(req, resp);
     } catch (const std::exception& e) {
@@ -216,7 +216,7 @@ class coro_http_router {
   }
 
   async_simple::coro::Lazy<void> route_coro(auto handler, auto& req, auto& resp,
-                                            std::string_view key) {
+                                            std::string_view ) {
     try {
       co_await (*handler)(req, resp);
     } catch (const std::exception& e) {

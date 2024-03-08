@@ -1548,7 +1548,7 @@ class coro_http_client : public std::enable_shared_from_this<coro_http_client> {
 
   template <typename String>
   async_simple::coro::Lazy<std::error_code> handle_multipart(
-      resp_data &data, req_context<String> ctx) {
+      resp_data &, req_context<String> ctx) {
     std::error_code ec{};
     std::string boundary = std::string{parser_.get_boundary()};
     multipart_reader_t multipart(this);

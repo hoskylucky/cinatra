@@ -94,7 +94,7 @@ class ExecutorWrapper : public async_simple::Executor {
   void schedule(Func func, Duration dur) override {
     auto timer = std::make_unique<asio::steady_timer>(executor_, dur);
     auto tm = timer.get();
-    tm->async_wait([fn = std::move(func), timer = std::move(timer)](auto ec) {
+    tm->async_wait([fn = std::move(func), timer = std::move(timer)](auto ) {
       fn();
     });
   }

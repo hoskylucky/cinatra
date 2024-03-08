@@ -213,12 +213,14 @@ public:
                 // state has already transfered, fallthrough
                 assert(_state.load(std::memory_order_relaxed) ==
                        detail::State::ONLY_CONTINUATION);
+                [[fallthrough]];
             case detail::State::ONLY_CONTINUATION:
                 if (_state.compare_exchange_strong(state, detail::State::DONE,
                                                    std::memory_order_release)) {
                     scheduleContinuation(false);
                     return;
                 }
+                [[fallthrough]];
             default:
                 logicAssert(false, "State Transfer Error");
         }
@@ -245,12 +247,14 @@ public:
                 // state has already transferred, fallthrough
                 assert(_state.load(std::memory_order_relaxed) ==
                        detail::State::ONLY_RESULT);
+                [[fallthrough]];
             case detail::State::ONLY_RESULT:
                 if (_state.compare_exchange_strong(state, detail::State::DONE,
                                                    std::memory_order_release)) {
                     scheduleContinuation(true);
                     return;
                 }
+                [[fallthrough]];
             default:
                 logicAssert(false, "State Transfer Error");
         }

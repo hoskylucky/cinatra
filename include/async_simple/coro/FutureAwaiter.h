@@ -40,7 +40,7 @@ struct FutureAwaiter {
         if (ex != nullptr) {
             ctx = ex->checkout();
         }
-        future_.setContinuation([continuation, ex, ctx](Try<T>&& t) mutable {
+        future_.setContinuation([continuation, ex, ctx](Try<T>&& ) mutable {
             if (ex != nullptr) {
                 ex->checkin(continuation, ctx);
             } else {

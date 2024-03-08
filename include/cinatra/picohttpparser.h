@@ -233,7 +233,7 @@ static const char *findchar_fast(const char *buf, const char *buf_end,
   return buf;
 }
 
-static const char *findchar_nonprintable_fast(const char *buf,
+[[maybe_unused]] static const char *findchar_nonprintable_fast(const char *buf,
                                               const char *buf_end, int *found) {
 #ifdef CINATRA_ARM_OPT
   *found = 0;
