@@ -416,7 +416,7 @@ class coro_http_client : public std::enable_shared_from_this<coro_http_client> {
     co_return co_await async_send_ws(std::move(msg), false, opcode::close);
   }
 
-  void on_ws_msg(std::function<void(resp_data)> on_ws_msg) {
+  void on_ws_msg(std::function<void(resp_data, opcode)> on_ws_msg) {
     on_ws_msg_ = std::move(on_ws_msg);
   }
   void on_ws_close(std::function<void(std::string_view)> on_ws_close) {
@@ -1803,7 +1803,7 @@ class coro_http_client : public std::enable_shared_from_this<coro_http_client> {
         close_socket(*sock);
 
         if (on_ws_msg)
-          on_ws_msg(data);
+          on_ws_msg(data, opcode::close);
         co_return;
       }
 
@@ -1814,7 +1814,8 @@ class coro_http_client : public std::enable_shared_from_this<coro_http_client> {
         continue;
       }
       frame_header *header = (frame_header *)data_ptr;
-      bool is_close_frame = header->opcode == opcode::close;
+      opcode op = static_cast<opcode>(header->opcode);
+      bool is_close_frame = op == opcode::close;
 
       read_buf.consume(header_size);
 
@@ -1828,7 +1829,7 @@ class coro_http_client : public std::enable_shared_from_this<coro_http_client> {
           data.status = 404;
           close_socket(*sock);
           if (on_ws_msg)
-            on_ws_msg(data);
+            on_ws_msg(data, opcode::close);
           co_return;
         }
       }
@@ -1866,11 +1867,11 @@ class coro_http_client : public std::enable_shared_from_this<coro_http_client> {
         data.net_err = asio::error::eof;
         data.status = 404;
         if (on_ws_msg)
-          on_ws_msg(data);
+          on_ws_msg(data, opcode::close);
         co_return;
       }
       if (on_ws_msg)
-        on_ws_msg(data);
+        on_ws_msg(data, op);
     }
   }
 
@@ -2009,7 +2010,7 @@ class coro_http_client : public std::enable_shared_from_this<coro_http_client> {
   std::map<std::string, multipart_t> form_data_;
   size_t max_single_part_size_ = 1024 * 1024;
 
-  std::function<void(resp_data)> on_ws_msg_;
+  std::function<void(resp_data, opcode)> on_ws_msg_;
   std::function<void(std::string_view)> on_ws_close_;
   std::string ws_sec_key_;
   std::string host_;
