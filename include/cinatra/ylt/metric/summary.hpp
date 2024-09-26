@@ -43,8 +43,9 @@ class summary_t : public static_metric {
   summary_t(std::string name, std::string help, Quantiles quantiles,
             std::chrono::milliseconds max_age = std::chrono::seconds{60},
             uint16_t age_buckets = 5)
-      : quantiles_{std::move(quantiles)},
-        static_metric(MetricType::Summary, std::move(name), std::move(help)) {
+      : 
+        static_metric(MetricType::Summary, std::move(name), std::move(help)),
+        quantiles_{std::move(quantiles)} {
     init_no_label(max_age, age_buckets);
   }
 
@@ -52,9 +53,9 @@ class summary_t : public static_metric {
             std::map<std::string, std::string> static_labels,
             std::chrono::milliseconds max_age = std::chrono::seconds{60},
             uint16_t age_buckets = 5)
-      : quantiles_{std::move(quantiles)},
-        static_metric(MetricType::Summary, std::move(name), std::move(help),
-                      std::move(static_labels)) {
+      : static_metric(MetricType::Summary, std::move(name), std::move(help),
+                      std::move(static_labels)),
+        quantiles_{std::move(quantiles)} {
     init_no_label(max_age, age_buckets);
   }
 
@@ -68,7 +69,7 @@ class summary_t : public static_metric {
     if (!has_observe_) [[unlikely]] {
       has_observe_ = true;
     }
-    int64_t max_limit = (std::min)(ylt_label_capacity, (int64_t)1000000);
+    auto max_limit = (std::min)(ylt_label_capacity, 1000000ul);
     if (block_->sample_queue_.size_approx() >= max_limit) {
       g_summary_failed_count++;
       return;
@@ -307,7 +308,7 @@ class basic_dynamic_summary : public dynamic_metric {
     if (!has_observe_) [[unlikely]] {
       has_observe_ = true;
     }
-    int64_t max_limit = (std::min)(ylt_label_capacity, (int64_t)1000000);
+    auto max_limit = (std::min)(ylt_label_capacity, 1000000ul);
     if (labels_block_->sample_queue_.size_approx() >= max_limit) {
       g_summary_failed_count++;
       return;

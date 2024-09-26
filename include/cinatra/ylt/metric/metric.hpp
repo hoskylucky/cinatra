@@ -226,20 +226,20 @@ class dynamic_metric : public metric_t {
 };
 
 inline auto g_user_metric_label_count = new thread_local_value<int64_t>(2);
-inline std::atomic<int64_t> g_summary_failed_count = 0;
-inline std::atomic<int64_t> g_user_metric_count = 0;
+inline std::atomic<uint64_t> g_summary_failed_count = 0;
+inline std::atomic<uint64_t> g_user_metric_count = 0;
 
-inline std::atomic<int64_t> ylt_metric_capacity = 10000000;
-inline int64_t ylt_label_capacity = 20000000;
+inline std::atomic<uint64_t> ylt_metric_capacity = 10000000;
+inline uint64_t ylt_label_capacity = 20000000;
 
 inline std::chrono::seconds ylt_label_max_age{0};
 inline std::chrono::seconds ylt_label_check_expire_duration{0};
 
-inline void set_metric_capacity(int64_t max_count) {
+inline void set_metric_capacity(uint64_t max_count) {
   ylt_metric_capacity = max_count;
 }
 
-inline void set_label_capacity(int64_t max_label_count) {
+inline void set_label_capacity(uint64_t max_label_count) {
   ylt_label_capacity = max_label_count;
 }
 

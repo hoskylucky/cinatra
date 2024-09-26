@@ -31,8 +31,8 @@ class basic_static_histogram : public static_metric {
  public:
   basic_static_histogram(std::string name, std::string help,
                          std::vector<double> buckets, size_t dupli_count = 2)
-      : bucket_boundaries_(std::move(buckets)),
-        static_metric(MetricType::Histogram, std::move(name), std::move(help)),
+      : static_metric(MetricType::Histogram, std::move(name), std::move(help)),
+        bucket_boundaries_(std::move(buckets)),
         sum_(std::make_shared<gauge_t>("", "", dupli_count)) {
     init_bucket_counter(dupli_count, bucket_boundaries_.size());
   }
@@ -41,8 +41,8 @@ class basic_static_histogram : public static_metric {
                          std::vector<double> buckets,
                          std::map<std::string, std::string> labels,
                          size_t dupli_count = 2)
-      : bucket_boundaries_(std::move(buckets)),
-        static_metric(MetricType::Histogram, name, help, labels),
+      : static_metric(MetricType::Histogram, name, help, labels),
+        bucket_boundaries_(std::move(buckets)),
         sum_(std::make_shared<gauge_t>("", "", dupli_count)) {
     init_bucket_counter(dupli_count, bucket_boundaries_.size());
   }

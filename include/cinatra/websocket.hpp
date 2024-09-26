@@ -170,7 +170,7 @@ class websocket {
   }
 
   void encode_ws_payload(std::span<char> &data) {
-    for (int i = 0; i < data.size(); ++i) {
+    for (auto i = 0u; i < data.size(); ++i) {
       data[i] ^= mask_key_[i % 4];
     }
   }

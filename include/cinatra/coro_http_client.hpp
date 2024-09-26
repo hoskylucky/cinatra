@@ -103,6 +103,7 @@ struct resp_data {
   std::error_code net_err = {};
   int status = 0;
   bool eof = false;
+  opcode op = opcode::text;
   std::string_view resp_body = {};
   std::span<http_header> resp_headers = {};
 #ifdef BENCHMARK_TEST
@@ -113,7 +114,7 @@ struct resp_data {
 template <typename String = std::string>
 struct req_context {
   req_content_type content_type = req_content_type::none;
-  std::string req_header; /*header string*/
+  std::string req_header {}; /*header string*/
   String content;         /*body*/
   coro_io::coro_file *resp_body_stream = nullptr;
 };
@@ -417,7 +418,7 @@ class coro_http_client : public std::enable_shared_from_this<coro_http_client> {
   template <typename Source>
   async_simple::coro::Lazy<resp_data> write_websocket(
       Source source, opcode op = opcode::text) {
-    resp_data data{};
+    resp_data data{.op = op};
 
     websocket ws{};
     std::string close_str;
@@ -2187,7 +2188,7 @@ class coro_http_client : public std::enable_shared_from_this<coro_http_client> {
   }
 
   async_simple::coro::Lazy<resp_data> async_read_ws() {
-    resp_data data{};
+    resp_data data{ .op = opcode::close };
 
     head_buf_.consume(head_buf_.size());
     std::shared_ptr sock = socket_;
@@ -2290,6 +2291,7 @@ class coro_http_client : public std::enable_shared_from_this<coro_http_client> {
         data.status = 404;
         co_return data;
       }
+      data.op = op;
       co_return data;
     }
   }

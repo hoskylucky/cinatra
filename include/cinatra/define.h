@@ -122,8 +122,8 @@ struct chunked_result {
 
 struct part_head_t {
   std::error_code ec;
-  std::string name;
-  std::string filename;
+  std::string name {};
+  std::string filename {};
 };
 
 enum resp_content_type {

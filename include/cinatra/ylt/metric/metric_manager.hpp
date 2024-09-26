@@ -11,7 +11,7 @@ class manager_helper {
   static bool register_metric(auto& metric_map, auto metric) {
     if (g_user_metric_count > ylt_metric_capacity) {
       CINATRA_LOG_ERROR << "metric count at capacity size: "
-                        << g_user_metric_count;
+                        << g_user_metric_count.load();
       return false;
     }
     auto [it, r] = metric_map.try_emplace(metric->str_name(), metric);
