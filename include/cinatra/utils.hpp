@@ -24,6 +24,7 @@
 
 #include "define.h"
 #include "response_cv.hpp"
+#include "string_resize.hpp"
 
 namespace cinatra {
 struct ci_less {
@@ -135,18 +136,17 @@ inline std::string_view trim_sv(std::string_view v) {
   return v;
 }
 
-inline std::string_view to_hex_string(size_t val) {
-  static char buf[20];
-  auto [ptr, ec] = std::to_chars(std::begin(buf), std::end(buf), val, 16);
-  return std::string_view{buf, size_t(std::distance(buf, ptr))};
-}
-
 inline void to_chunked_buffers(std::vector<asio::const_buffer> &buffers,
+                               std::string &size_str,
                                std::string_view chunk_data, bool eof) {
   size_t length = chunk_data.size();
   if (length > 0) {
     // convert bytes transferred count to a hex string.
-    auto chunk_size = to_hex_string(length);
+    detail::resize(size_str, 20);
+    auto [ptr, ec] =
+        std::to_chars(size_str.data(), size_str.data() + 20, length, 16);
+    std::string_view chunk_size{size_str.data(),
+                                size_t(std::distance(size_str.data(), ptr))};
 
     // Construct chunk based on rfc2616 section 3.6.1
     buffers.push_back(asio::buffer(chunk_size));
@@ -290,6 +290,28 @@ get_cookies_map(std::string_view cookies_str) {
   return cookies;
 };
 
+template <bool is_first_time, bool is_last_time>
+inline std::string_view get_chuncked_buffers(size_t length,
+                                             std::array<char, 24> &buffer) {
+  if constexpr (is_last_time) {
+    return std::string_view{"\r\n0\r\n\r\n"};
+  }
+  else {
+    auto [ptr, ec] = std::to_chars(
+        buffer.data() + 2, buffer.data() + buffer.size() - 2, length, 16);
+    *ptr++ = '\r';
+    *ptr++ = '\n';
+    if constexpr (is_first_time) {
+      buffer[0] = '\r';
+      buffer[1] = '\n';
+      return std::string_view(buffer.data() + 2,
+                              std::distance(buffer.data() + 2, ptr));
+    }
+    else {
+      return std::string_view(buffer.data(), std::distance(buffer.data(), ptr));
+    }
+  }
+}
 }  // namespace cinatra
 
 #endif  // CINATRA_UTILS_HPP

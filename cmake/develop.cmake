@@ -39,11 +39,7 @@ int main()
 endmacro()
 
 # Enable address sanitizer
-if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    option(ENABLE_SANITIZER "Enable sanitizer(Debug+Gcc/Clang/AppleClang)" OFF)
-else()
-    option(ENABLE_SANITIZER "Enable sanitizer(Debug+Gcc/Clang/AppleClang)" ON)
-endif()
+option(ENABLE_SANITIZER "Enable sanitizer(Debug+Gcc/Clang/AppleClang)" ON)
 if(ENABLE_SANITIZER AND NOT MSVC)
     if(CMAKE_BUILD_TYPE STREQUAL "Debug")
         check_asan(HAS_ASAN)
@@ -57,9 +53,18 @@ if(ENABLE_SANITIZER AND NOT MSVC)
     endif()
 endif()
 
+option(ENABLE_METRIC_JSON "Enable serialize metric to json" OFF)
+if(ENABLE_METRIC_JSON)
+    add_definitions(-DCINATRA_ENABLE_METRIC_JSON)
+    message(STATUS "Enable serialize metric to json")
+endif()
+
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH}")
+
 SET(ENABLE_GZIP OFF)
 SET(ENABLE_SSL OFF)
 SET(ENABLE_CLIENT_SSL OFF)
+SET(ENABLE_BROTLI OFF)
 
 if (ENABLE_SSL)
 	add_definitions(-DCINATRA_ENABLE_SSL)
@@ -103,5 +108,14 @@ endif()
 if (ENABLE_GZIP)
 	find_package(ZLIB REQUIRED)
 endif()
+
+if (ENABLE_BROTLI)
+	find_package(Brotli REQUIRED)
+	if (Brotli_FOUND)
+		message(STATUS "Brotli found")
+		add_definitions(-DCINATRA_ENABLE_BROTLI)
+	endif (Brotli_FOUND)
+endif(ENABLE_BROTLI)
+
 
 add_definitions(-DCORO_HTTP_PRINT_REQ_HEAD)

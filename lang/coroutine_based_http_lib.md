@@ -205,23 +205,14 @@ client端：
   cinatra::coro_http_client client{};
   std::string message(100, 'x');
 
-  client.on_ws_close([](std::string_view reason) {
-      std::cout << "web socket close " << reason << std::endl;
-  });
-
-  client.on_ws_msg([message](cinatra::resp_data data) {
-    if (data.net_err) {
-      std::cout << "ws_msg net error " << data.net_err.message() << "\n";
-      return;
-    }
-
-    std::cout << "ws msg len: " << data.resp_body.size() << std::endl;
-    REQUIRE(data.resp_body == message);
-  });
-
-  co_await client.async_ws_connect("ws://127.0.0.1:9001/ws_echo");
-  co_await client.async_send_ws(message);
-  co_await client.async_send_ws_close("test close");
+  co_await client.connect("ws://127.0.0.1:9001/ws_echo");
+  co_await client.write_websocket(std::string(message));
+  auto data = co_await client.read_websocket();
+  CHECK(data.resp_body == message);
+  co_await client.write_websocket_close("test close");
+  data = co_await client.read_websocket();
+  CHECK(data.resp_body == "test close");
+  CHECK(data.net_err == asio::error::eof);
 ```
 client 设置读回调和close回调分别处理收到的websocket 消息和websocket close消息。
 
@@ -453,14 +444,14 @@ coro_http_client client{};
   create_file(filename, 1010);
 
   coro_io::coro_file file{};
-  co_await file.async_open(filename, coro_io::flags::read_only);
+  file.open(filename, std::ios::in);
 
   std::string buf;
   detail::resize(buf, 100);
 
   auto fn = [&file, &buf]() -> async_simple::coro::Lazy<read_result> {
     auto [ec, size] = co_await file.async_read(buf.data(), buf.size());
-    co_return read_result{buf, file.eof(), ec};
+    co_return read_result{{buf.data(),buf.size()}, file.eof(), ec};
   };
 
   auto result = co_await client.async_upload_chunked(
@@ -537,7 +528,7 @@ async_simple::coro::Lazy<void> byte_ranges_download() {
         auto boundary = req.get_boundary();
         multipart_reader_t multipart(req.get_conn());
         while (true) {
-          auto part_head = co_await multipart.read_part_head();
+          auto part_head = co_await multipart.read_part_head(boundary);
           if (part_head.ec) {
             co_return;
           }
@@ -559,7 +550,7 @@ async_simple::coro::Lazy<void> byte_ranges_download() {
             }
 
             std::cout << filename << "\n";
-            co_await file->async_open(filename, coro_io::flags::create_write);
+            file->open(filename, std::ios::trunc|std::ios::out);
             if (!file->is_open()) {
               resp.set_status_and_content(status_type::internal_server_error,
                                           "file open failed");
@@ -573,8 +564,7 @@ async_simple::coro::Lazy<void> byte_ranges_download() {
           }
 
           if (!filename.empty()) {
-            auto ec = co_await file->async_write(part_body.data.data(),
-                                                 part_body.data.size());
+            auto ec = co_await file->async_write(part_body.data);
             if (ec) {
               co_return;
             }

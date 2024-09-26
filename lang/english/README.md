@@ -269,7 +269,7 @@ see[example](../../example/main.cpp)
 
 This code demonstrates how to use RESTful path parameters. Two RESTful APIs are set up below. When accessing the first API, such as the url `http://127.0.0.1:8080/numbers/1234/test/5678`, the server can get the two parameters of 1234 and 5678, the first RESTful API The parameter is `(\d+)`, which is a regex expression, which means that the parameter can only be a number. The code to get the first parameter is `req.get_matches ()[1]`. Because each req is different, each matched parameter is placed in the `request` structure.
 
-At the same time, it also supports RESTful API with any character, that is, the second RESTful API in the example, and the path parameter is set to `"/string/{:id}/test/{:name}"`. To get the corresponding parameters, use the `req.get_query_value` function. The parameters can only be registered variables (if you access non-registered variables, it will run but report an error). In the example, the parameter names are id and name. To get the id parameter, call `req.get_query_value("id")` will do. After the sample code is displayed, when accessing `http://127.0.0.1:8080/string/params_1/test/api_test`, the browser will return the `api_test` string.
+At the same time, it also supports RESTful API with any character, that is, the second RESTful API in the example, and the path parameter is set to `"/string/:id/test/:name"`. To get the corresponding parameters, use the `req.get_query_value` function. The parameters can only be registered variables (if you access non-registered variables, it will run but report an error). In the example, the parameter names are id and name. To get the id parameter, call `req.get_query_value("id")` will do. After the sample code is displayed, when accessing `http://127.0.0.1:8080/string/params_1/test/api_test`, the browser will return the `api_test` string.
 
 ```cpp
 #include "cinatra.hpp"
@@ -282,14 +282,14 @@ int main() {
 
 	server.set_http_handler<GET, POST>(
 		R"(/numbers/(\d+)/test/(\d+))", [](request &req, response &res) {
-			std::cout << " matches[1] is : " << req.get_matches()[1]
-					<< " matches[2] is: " << req.get_matches()[2] << std::endl;
+			std::cout << " matches[1] is : " << req.matches_[1]
+					<< " matches[2] is: " << req.matches_[2] << std::endl;
 
 			res.set_status_and_content(status_type::ok, "hello world");
 		});
 
 	server.set_http_handler<GET, POST>(
-		"/string/{:id}/test/{:name}", [](request &req, response &res) {
+		"/string/:id/test/:name", [](request &req, response &res) {
 			std::string id = req.get_query_value("id");
 			std::cout << "id value is: " << id << std::endl;
 			std::cout << "name value is: " << std::string(req.get_query_value("name")) << std::endl;
@@ -376,17 +376,50 @@ async_simple::coro::Lazy<void> test_async_client() {
 ```
 
 #### upload(multipart) file
+```cpp
+void start_server() {
+  coro_http_server server(1, 9001);
+  server.set_http_handler<POST>(
+      "/form_data",
+      [](coro_http_request &req,
+         coro_http_response &resp) -> async_simple::coro::Lazy<void> {
+        assert(req.get_content_type() == content_type::multipart);
+        auto boundary = req.get_boundary();
+        multipart_reader_t multipart(req.get_conn());
+        while (true) {
+          auto part_head = co_await multipart.read_part_head(boundary);
+          if (part_head.ec) {
+            co_return;
+          }
+
+          std::cout << part_head.name << "\n";
+          std::cout << part_head.filename << "\n";// if form data, no filename
+
+          auto part_body = co_await multipart.read_part_body(boundary);
+          if (part_body.ec) {
+            co_return;
+          }
+
+          std::cout << part_body.data << "\n";
+
+          if (part_body.eof) {
+            break;
+          }
+        }
+
+        resp.set_status_and_content(status_type::ok, "multipart finished");
+      });
+  server.start();      
+}
 ```
+```cpp
 async_simple::coro::Lazy<void> test_upload() {
-  std::string uri = "http://example.com/";
+  std::string uri = "http://127.0.0.1:9001/form_data";
   coro_http_client client{};
-  auto result = co_await client.async_upload(uri, "test", "yourfile.jpg");
-  print(result.status);
-  std::cout << "upload finished\n";
 
   client.add_str_part("hello", "coro_http_client");
   client.add_file_part("test", "yourfile.jpg");
-  result = co_await client.async_upload(uri);
+  result = co_await client.async_upload_multipart(uri);
   print(result.status);
   std::cout << "upload finished\n";
 }
@@ -414,29 +447,21 @@ async_simple::coro::Lazy<void> test_download() {
 ```c++
 async_simple::coro::Lazy<void> test_websocket() {
   coro_http_client client{};
-  client.on_ws_close([](std::string_view reason) {
-    std::cout << "web socket close " << reason << std::endl;
-  });
-  client.on_ws_msg([](resp_data data) {
-    if (data.net_err) {
-      std::cout << data.net_err.message() << "\n";
-      return;
-    }
-    std::cout << data.resp_body << std::endl;
-  });
-
-  bool r = co_await client.async_ws_connect("ws://localhost:8090/ws");
-  if (!r) {
+  auto r = co_await client.connect("ws://localhost:8090/ws");
+  if (r.net_err) {
     co_return;
   }
 
-  auto result =
-      co_await client.async_send_ws("hello websocket");  // mask as default.
-  std::cout << result.status << "\n";
-  result = co_await client.async_send_ws("test again", /*need_mask = */ false);
-  std::cout << result.status << "\n";
-  result = co_await client.async_send_ws_close("ws close");
-  std::cout << result.status << "\n";
+  co_await client.write_websocket("hello websocket");
+  auto data = co_await client.read_websocket();
+  CHECK(data.resp_body == "hello websocket");
+  co_await client.write_websocket("test again");
+  data = co_await client.read_websocket();
+  CHECK(data.resp_body == "test again");
+  co_await client.write_websocket("ws close");
+  data = co_await client.read_websocket();
+  CHECK(data.net_err == asio::error::eof);
+  CHECK(data.resp_body == "ws close");
 }
 ```
 
@@ -484,6 +509,14 @@ e.g. `-H User-Agent: coro_http_press` is to add an http header, and `-H User-Age
 
 
 `-r `parameter, which indicates whether to read a fixed-length response, this parameter can avoid frequent parsing of the response to optimize performance, some servers may return different lengths for the same request, in this case, do not set -r to 1, or do not set this parameter.
+
+# submodule
+
+A submodule of cinatra is iguana.
+
+When you want to use this submodule, using the command `git submodule init` will pull the iguana library.
+
+If you want to use the latest iguana, please use the command `git submodule update --remote`.
 
 ## Performance
 

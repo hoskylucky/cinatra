@@ -127,6 +127,8 @@ class coro_http_request {
 
   const auto &get_queries() const { return parser_.queries(); }
 
+  std::string_view full_url() { return parser_.full_url(); }
+
   void set_body(std::string &body) {
     body_ = body;
     auto type = get_content_type();
@@ -142,6 +144,27 @@ class coro_http_request {
   bool is_resp_ranges() { return parser_.is_resp_ranges(); }
 
   bool is_req_ranges() { return parser_.is_req_ranges(); }
+
+  std::string_view get_accept_encoding() {
+    return get_header_value("Accept-Encoding");
+  }
+
+  content_encoding get_encoding_type() {
+    auto encoding_type = get_header_value("Content-Encoding");
+    if (!encoding_type.empty()) {
+      if (encoding_type.find("gzip") != std::string_view::npos)
+        return content_encoding::gzip;
+      else if (encoding_type.find("deflate") != std::string_view::npos)
+        return content_encoding::deflate;
+      else if (encoding_type.find("br") != std::string_view::npos)
+        return content_encoding::br;
+      else
+        return content_encoding::none;
+    }
+    else {
+      return content_encoding::none;
+    }
+  }
 
   content_type get_content_type() {
     if (is_chunked())
@@ -182,7 +205,13 @@ class coro_http_request {
     if (content_type.empty()) {
       return {};
     }
-    return content_type.substr(content_type.rfind("=") + 1);
+
+    auto pos = content_type.rfind("=");
+    if (pos == std::string_view::npos) {
+      return "";
+    }
+
+    return content_type.substr(pos + 1);
   }
 
   coro_http_connection *get_conn() { return conn_; }
@@ -204,6 +233,14 @@ class coro_http_request {
 
     is_websocket_ = true;
     return true;
+  }
+
+  bool is_support_compressed() {
+    auto extension_str = get_header_value("Sec-WebSocket-Extensions");
+    if (extension_str.find("permessage-deflate") != std::string::npos) {
+      return true;
+    }
+    return false;
   }
 
   void set_aspect_data(std::string data) {
@@ -268,7 +305,7 @@ class coro_http_request {
   http_parser &parser_;
   std::string_view body_;
   coro_http_connection *conn_;
-  bool is_websocket_;
+  bool is_websocket_ = false;
   std::vector<std::string> aspect_data_;
   std::string cached_session_id_;
 };
