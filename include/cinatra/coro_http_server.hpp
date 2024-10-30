@@ -190,7 +190,7 @@ class coro_http_server {
         ylt::metric::system_metric_manager>;
     set_http_handler<http_method::GET>(
         url_path,
-        [enable_json](coro_http_request &req, coro_http_response &res) {
+        [enable_json](coro_http_request &, coro_http_response &res) {
           std::string str;
 #ifdef CINATRA_ENABLE_METRIC_JSON
           if (enable_json) {

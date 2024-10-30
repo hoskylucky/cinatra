@@ -145,9 +145,9 @@ class metric_t {
   }
 
   virtual void remove_label_value(
-      const std::map<std::string, std::string>& labels) {}
+      const std::map<std::string, std::string>& ) {}
 
-  virtual void serialize(std::string& str) {}
+  virtual void serialize(std::string& ) {}
 
 #ifdef CINATRA_ENABLE_METRIC_JSON
   virtual void serialize_to_json(std::string& str) {}

@@ -147,7 +147,7 @@ class summary_impl {
       }
     }
     void stat(uint64_t& count,
-              std::vector<std::pair<int16_t, uint32_t>>& result) {
+              std::vector<std::pair<uint16_t, uint32_t>>& result) {
       for (int i = piece_cnt - 1; i >= piece_cnt / 2; --i) {
         stat_impl<false>(count, result, i);
       }
@@ -212,8 +212,8 @@ class summary_impl {
   }
 
   struct data_copy_t {
-    std::vector<std::pair<int16_t, uint32_t>> arr[2];
-    int index[2] = {}, smaller_one;
+    std::vector<std::pair<uint16_t, uint32_t>> arr[2];
+    uint32_t index[2] = {}, smaller_one;
     void init() {
       if (arr[0][0] <= arr[1][0]) {
         smaller_one = 0;
@@ -231,7 +231,7 @@ class summary_impl {
         smaller_one = 1;
       }
     }
-    int16_t value() { return arr[smaller_one][index[smaller_one]].first; }
+    uint16_t value() { return arr[smaller_one][index[smaller_one]].first; }
     uint32_t count() { return arr[smaller_one][index[smaller_one]].second; }
   };
 
@@ -290,8 +290,8 @@ class summary_impl {
       return std::vector<float>(rate_.size(), 0);
     }
     uint64_t count_now = 0;
-    data_copy.arr[0].emplace_back(bucket_size / 2, 0);
-    data_copy.arr[1].emplace_back(bucket_size / 2, 0);
+    data_copy.arr[0].emplace_back(bucket_size / 2u, 0);
+    data_copy.arr[1].emplace_back(bucket_size / 2u, 0);
     data_copy.init();
     std::vector<float> result;
     result.reserve(rate_.size());
@@ -317,7 +317,7 @@ class summary_impl {
         data_copy.inc();
       }
     }
-    while (data_copy.value() < bucket_size / 2) {
+    while (data_copy.value() < bucket_size / 2u) {
       sum +=
           decode(data_t::get_raw_index(data_copy.value())) * data_copy.count();
       data_copy.inc();
@@ -338,9 +338,9 @@ class summary_impl {
   }
 
  private:
+  std::vector<double>& rate_;
   const std::chrono::milliseconds refresh_time_;
   std::atomic<uint64_t> tp_;
-  std::vector<double>& rate_;
   std::array<std::atomic<data_t*>, 2> data_;
   std::atomic<int> frontend_data_index_;
 };

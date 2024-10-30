@@ -80,7 +80,7 @@ class dynamic_metric_impl : public dynamic_metric {
     template <typename... Args>
     value_type(Args&&... args)
         : std::shared_ptr<metric_pair>(
-              std::make_shared<metric_pair>(std::forward<Args>(args)...)){};
+              std::make_shared<metric_pair>(std::forward<Args>(args)...)){}
   };
 
  public:

@@ -64,8 +64,9 @@ class coro_http_response {
   template <typename String>
   void set_status_and_content_view(
       status_type status, String content = "",
-      content_encoding encoding = content_encoding::none, bool is_view = true,
-      std::string_view client_encoding_type = "") {
+      [[maybe_unused]] content_encoding encoding = content_encoding::none, 
+      [[maybe_unused]] bool is_view = true,
+      [[maybe_unused]] std::string_view client_encoding_type = "") {
     status_ = status;
 #ifdef CINATRA_ENABLE_GZIP
     if (encoding == content_encoding::gzip) {
