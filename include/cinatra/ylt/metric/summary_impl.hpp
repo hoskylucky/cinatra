@@ -73,7 +73,7 @@ class summary_impl {
     fltInt16 |= (fltInt32 >> 15) & 0xff;
 
     auto i = fltInt16 >> (8 - frac_bit);
-    auto j = decode_impl(i);
+    decode_impl(i);
     return i;
   }
 
@@ -113,7 +113,7 @@ class summary_impl {
         }
       }
     }
-    static uint16_t get_ordered_index(int16_t raw_index) {
+    static uint16_t get_ordered_index(uint16_t raw_index) {
       return (raw_index >= bucket_size / 2) ? (bucket_size / 2 - 1 - raw_index)
                                             : (raw_index);
     }
@@ -123,11 +123,11 @@ class summary_impl {
     }
     template <bool inc_order>
     void stat_impl(uint64_t& count,
-                   std::vector<std::pair<int16_t, uint32_t>>& result, int i) {
+                   std::vector<std::pair<uint16_t, uint32_t>>& result, int i) {
       auto piece = arr[i].load(std::memory_order_relaxed);
       if (piece) {
         if constexpr (inc_order) {
-          for (int j = 0; j < piece->size(); ++j) {
+          for (auto j = 0u; j < piece->size(); ++j) {
             auto value = (*piece)[j].load(std::memory_order_relaxed);
             if (value) {
               result.emplace_back(get_ordered_index(i * piece_size + j), value);
@@ -148,10 +148,10 @@ class summary_impl {
     }
     void stat(uint64_t& count,
               std::vector<std::pair<uint16_t, uint32_t>>& result) {
-      for (int i = piece_cnt - 1; i >= piece_cnt / 2; --i) {
+      for (auto i = piece_cnt - 1; i >= piece_cnt / 2; --i) {
         stat_impl<false>(count, result, i);
       }
-      for (int i = 0; i < piece_cnt / 2; ++i) {
+      for (auto i = 0u; i < piece_cnt / 2; ++i) {
         stat_impl<true>(count, result, i);
       }
     }
@@ -180,7 +180,7 @@ class summary_impl {
     }
   }
 
-  static inline const unsigned long ms_count =
+  static inline const auto ms_count =
       std::chrono::steady_clock::duration{std::chrono::milliseconds{1}}.count();
 
   constexpr static unsigned int near_uint32_max = 4290000000U;
@@ -240,7 +240,7 @@ class summary_impl {
     if (refresh_time_.count() <= 0) {
       return;
     }
-    uint64_t old_tp = tp_;
+    int64_t old_tp = tp_;
     auto new_tp = std::chrono::steady_clock::now().time_since_epoch().count();
     auto ms = (new_tp - old_tp) / ms_count;
     if (; ms >= refresh_time_.count()) [[unlikely]] {
@@ -329,7 +329,7 @@ class summary_impl {
                std::chrono::seconds refresh_time = std::chrono::seconds{0})
       : rate_(rate),
         refresh_time_(refresh_time.count() * 1000 / 2),
-        tp_(std::chrono::steady_clock::now().time_since_epoch().count()){};
+        tp_(std::chrono::steady_clock::now().time_since_epoch().count()) {};
 
   ~summary_impl() {
     for (auto& data : data_) {
@@ -340,7 +340,7 @@ class summary_impl {
  private:
   std::vector<double>& rate_;
   const std::chrono::milliseconds refresh_time_;
-  std::atomic<uint64_t> tp_;
+  std::atomic<int64_t> tp_;
   std::array<std::atomic<data_t*>, 2> data_;
   std::atomic<int> frontend_data_index_;
 };
