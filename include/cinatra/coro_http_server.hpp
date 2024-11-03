@@ -18,6 +18,8 @@ enum class file_resp_format_type {
   chunked,
   range,
 };
+
+template <typename LOCALS>
 class coro_http_server {
  public:
   coro_http_server(asio::io_context &ctx, unsigned short port,
@@ -189,8 +191,7 @@ class coro_http_server {
         ylt::metric::default_static_metric_manager,
         ylt::metric::system_metric_manager>;
     set_http_handler<http_method::GET>(
-        url_path,
-        [enable_json](coro_http_request &, coro_http_response &res) {
+        url_path, [enable_json](coro_http_request &, coro_http_response &res) {
           std::string str;
 #ifdef CINATRA_ENABLE_METRIC_JSON
           if (enable_json) {
@@ -722,7 +723,15 @@ class coro_http_server {
         connections_.emplace(conn_id, conn);
       }
 
-      start_one(conn).via(conn->get_executor()).detach();
+      auto *l = new LOCALS;
+      start_one(conn)
+          .via(conn->get_executor())
+          .setLazyLocal(l)
+          .start([l](auto &&t) {
+            delete l;
+            if (t.hasError())
+              std::rethrow_exception(t.getException());
+          });
     }
   }
 
@@ -994,7 +1003,7 @@ class coro_http_server {
       default_handler_ = nullptr;
 };
 
-using http_server = coro_http_server;
+using http_server = coro_http_server<void>;
 using request = coro_http_request;
 using response = coro_http_response;
 }  // namespace cinatra
