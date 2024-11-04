@@ -19,7 +19,7 @@ enum class file_resp_format_type {
   range,
 };
 
-template <typename LOCALS>
+template <typename LOCALS = void>
 class coro_http_server {
  public:
   coro_http_server(asio::io_context &ctx, unsigned short port,
@@ -723,15 +723,20 @@ class coro_http_server {
         connections_.emplace(conn_id, conn);
       }
 
-      auto *l = new LOCALS;
-      start_one(conn)
-          .via(conn->get_executor())
-          .setLazyLocal(l)
-          .start([l](auto &&t) {
-            delete l;
-            if (t.hasError())
-              std::rethrow_exception(t.getException());
-          });
+      if constexpr (std::is_same_v<LOCALS, void>) {
+        start_one(conn).via(conn->get_executor()).detach();
+      }
+      else {
+        auto *l = new LOCALS;
+        start_one(conn)
+            .via(conn->get_executor())
+            .setLazyLocal(l)
+            .start([l](auto &&t) {
+              delete l;
+              if (t.hasError())
+                std::rethrow_exception(t.getException());
+            });
+      }
     }
   }
 
